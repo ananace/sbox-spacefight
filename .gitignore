@@ -1,6 +1,7 @@
 .codegen
 obj
 accesslist.txt
+sync.sh
 *.csproj
 launchSettings.json
 tools_asset_info.bin
@@ -9,4 +10,4 @@ tools_thumbnail_cache.bin
 *.dll
 *.pdb
 .intermediate/net5.0/sandbox.deps.json
-maps/editor/_bakeresourcecache/toolscene_default_baked/*
+_bakeresourcecache/
