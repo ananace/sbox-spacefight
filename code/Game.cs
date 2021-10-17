@@ -1,4 +1,4 @@
-﻿using Sandbox;
+using Sandbox;
 using Sandbox.UI.Construct;
 using System;
 using System.IO;
@@ -10,20 +10,14 @@ namespace SpaceFight
 	{
 		public Game()
 		{
-			if (IsServer) 
+			if (IsServer)
 			{
-				Log.Info("My Gamemode Has Created Serverside!");
-
-				// Create a HUD entity. This entity is globally networked
-				// and when it is created clientside it creates the actual
-				// UI panels. You don't have to create your HUD via an entity,
-				// this just feels like a nice neat way to do it.
-				new HudEntity();
+				new UI.MainHud();
 			}
 
 			if (IsClient)
 			{
-				Log.Info("My Gamemode Has Created Clientside!");
+				// Do something
 			}
 		}
 
@@ -37,5 +31,4 @@ namespace SpaceFight
 			player.Respawn();
 		}
 	}
-
 }
