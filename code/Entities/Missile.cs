@@ -1,7 +1,8 @@
 using Sandbox;
+
 namespace SpaceFight.Entities
 {
-	public partial class Missile : Sandbox.BasePhysics
+	public abstract partial class Missile : Sandbox.BasePhysics
 	{
 		public enum MissileState
 		{
@@ -14,12 +15,33 @@ namespace SpaceFight.Entities
 			Dead
 		}
 
-		[Net] float Fuel { get; set; } = 100.0f;
-		[Net] float Timer { get; set; } = 0.0f;
-		[Net] MissileState State { get; set; } = MissileState.Inactive;
+		/// <summary>Fuel In Seconds</summary>
+		[Net] public float Fuel { get; set; }
+		[Net] public MissileState State { get; set; } = MissileState.Inactive;
+		[Net] public Entity Target { get; set; }
+
+		[Net] private float Timer { get; set; } = 0.0f;
+
+		public SpaceFight.Assets.MissileDefinition Definition { get; set; }
+
+		public override void Spawn()
+		{
+			SetModel(Definition.Model);
+			SetupPhysicsFromModel(PhysicsMotionType.Dynamic, false);
+
+			base.Spawn();
+
+			Fuel = Definition.FuelSeconds;
+
+			Tags.Add("targetable", "missile", "ordnance");
+
+			PhysicsBody.GravityEnabled = false;
+			PhysicsBody.DragEnabled = false;
+		}
 
 		public override void TakeDamage(DamageInfo info)
 		{
+			// Don't damage an un-launched missile
 			if (State == MissileState.Inactive)
 			{
 				ApplyDamageForces(info);
@@ -36,13 +58,21 @@ namespace SpaceFight.Entities
 				warhead.Detonate();
 			else if (Fuel > 0)
 			{
-				// TODO Fuel explosion
+				// TODO Fuel explosion?
 			}
 
 			Fuel = 0;
 			State = MissileState.Dead;
 
 			base.OnKilled();
+		}
+
+		public virtual void Seek()
+		{
+			if (Target == null)
+				return;
+
+			var destination = Target.Position + Target.Velocity; // * (Distance / this.Velocity)
 		}
 
 		[Event.Tick]
@@ -54,7 +84,7 @@ namespace SpaceFight.Entities
 			if (State == MissileState.Launched)
 			{
 				Timer += Time.Delta;
-				if (Timer > 1.0f)
+				if (Timer > Definition.IgnitionTime)
 				{
 					State = MissileState.Ignited;
 					Timer = 0;
@@ -64,8 +94,7 @@ namespace SpaceFight.Entities
 			else if (State == MissileState.Ignited)
 			{
 				Timer += Time.Delta;
-				const float armingTime = 0.5f;
-				if (Timer > armingTime)
+				if (Timer > Definition.ArmingTime)
 				{
 					var warhead = Components.Get<SpaceFight.Components.Warhead>();
 					warhead?.Arm();
@@ -77,12 +106,11 @@ namespace SpaceFight.Entities
 			else if (State >= MissileState.BurnedOut)
 			{
 				Timer += Time.Delta;
-				const float coastLifetime = 10.0f;
-				if (Timer > coastLifetime)
+				if (Timer > Definition.CoastingTime)
 				{
 					var warhead = Components.Get<SpaceFight.Components.Warhead>();
 					warhead?.Detonate();
-					// Destroy();
+					Health = 0;
 					Timer = 0;
 				}
 				return;
@@ -92,13 +120,16 @@ namespace SpaceFight.Entities
 				Fuel -= Time.Delta; // 2x fuel burn
 
 			if (State != MissileState.SuicideBurn)
-				;// Seek();
+				Seek();
 
-			const float suicideFuelPoint = 10.0f;
+			if (Target != null && Definition.SuicideBurnDistance > 0)
+			{
+				if (Position.Distance(Target.Position) <= Definition.SuicideBurnDistance)
+					State = MissileState.SuicideBurn;
+			}
+
 			if (Fuel <= 0)
 				State = MissileState.BurnedOut;
-			else if (Fuel <= suicideFuelPoint)
-				State = MissileState.SuicideBurn;
 		}
 
 		[Sandbox.Event.Physics.PostStep]
@@ -111,10 +142,10 @@ namespace SpaceFight.Entities
 			if (!body.IsValid())
 				return;
 
-			float targetSpeed = 1000.0f;
+			float acceleration = Definition.AccelerationForce;
 			if (State == MissileState.SuicideBurn)
-				targetSpeed *= 2.0f;
-			body.ApplyForce(body.Rotation.Forward * body.Mass * targetSpeed);
+				acceleration *= 2.0f;
+			body.ApplyForce(body.Rotation.Forward * body.Mass * acceleration);
 		}
 	}
 }
