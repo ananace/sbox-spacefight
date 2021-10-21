@@ -11,6 +11,8 @@ namespace SpaceFight.Entities
 
 		public bool CanFire { get { return CurrentRounds > 0 && RefireTimer <= 0; } }
 
+		SpaceFight.Assets.MissileDefinition _OrdnanceDefinition { get; set; }
+
 		public void RefreshAmmunition()
 		{
 			if (!IsServer)
@@ -41,6 +43,23 @@ namespace SpaceFight.Entities
 
 			CurrentRounds--;
 			RefireTimer = FireRate;
+
+			switch (Definition.WeaponType)
+			{
+			case Definition.WeaponType.Ordnance:
+				{
+					var ordnance = new SpaceFight.Entities.Missile {
+						Definition = _OrdnanceDefinition
+					};
+					ordnance.Position = EyePos + EyeRot.Forward * missile.OOBBox.Size.Length * 1.5f;
+					ordnance.Rotation = EyeRot;
+					ordnance.Rotation.RotateAroundAxis(missile.Rotation.Forward, Sandbox.Rand.Float() * 360.0f);
+					ordnance.PhysicsGroup.Velocity = Velocity + EyeRot.Forward * 100;
+					ordnance.State = MissileState.Launched;
+					ordnance.Spawn();
+				}
+				break;
+			}
 		}
 
 		[Event.Tick]

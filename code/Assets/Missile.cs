@@ -12,7 +12,7 @@ namespace SpaceFight.Assets
 			LockRequired
 		}
 
-		[Property]
+		[Property, ResourceType("vmdl")]
 		public string Model { get; set; }
 		[Property]
 		public float FuelSeconds { get; set; }

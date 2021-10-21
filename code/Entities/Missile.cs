@@ -2,7 +2,7 @@ using Sandbox;
 
 namespace SpaceFight.Entities
 {
-	public abstract partial class Missile : Sandbox.BasePhysics
+	public partial class Missile : Sandbox.BasePhysics
 	{
 		public enum MissileState
 		{
