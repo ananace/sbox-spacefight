@@ -16,8 +16,7 @@ namespace SpaceFight.Components
 	{
 		[Net] public IFCSAssists Assists { get; set; } = IFCSAssists.None;
 
-		[Event.Tick]
-		public void OnTick()
+		public void Simulate(Client cl, Vector3 InputForce, Rotation InputRotation, ref Vector3 OutputForce, ref Rotation OutputRotation)
 		{
 			var body = Entity.PhysicsGroup.GetBody(0);
 			if (!body.IsValid())
